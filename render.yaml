@@ -20,7 +20,7 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: CORS_ORIGIN
-        value: "*"
+        value: '*'
 
 databases:
   - name: tasks-manager-db
@@ -28,4 +28,3 @@ databases:
     region: oregon
     databaseName: tasks_manager
     user: tasks_manager_user
-
