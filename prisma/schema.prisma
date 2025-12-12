@@ -1,0 +1,97 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  admin
+  member
+}
+
+enum TaskStatus {
+  pending
+  in_progress
+  completed
+}
+
+enum TaskPriority {
+  high
+  medium
+  low
+}
+
+model User {
+  id               Int            @id @default(autoincrement())
+  name             String         @db.VarChar(100)
+  email            String         @unique @db.VarChar(150)
+  password         String         @db.VarChar(255)
+  role             UserRole       @default(member)
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+  assignedTasks    Task[]         @relation("TaskAssignee")
+  taskHistory      TaskHistory[]  @relation("TaskHistoryChangedBy")
+  teamMemberships  TeamMember[]
+
+  @@map("users")
+}
+
+model Team {
+  id          Int           @id @default(autoincrement())
+  name        String        @db.VarChar(100)
+  description String?       @db.Text
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+  members     TeamMember[]
+  tasks       Task[]
+
+  @@map("teams")
+}
+
+model TeamMember {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  teamId    Int      @map("team_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+  team Team @relation(fields: [teamId], references: [id])
+
+  @@unique([userId, teamId], map: "uniq_user_team")
+  @@map("team_members")
+}
+
+model Task {
+  id          Int           @id @default(autoincrement())
+  title       String        @db.VarChar(200)
+  description String?       @db.Text
+  status      TaskStatus    @default(pending)
+  priority    TaskPriority  @default(medium)
+  assignedTo  Int           @map("assigned_to")
+  teamId      Int           @map("team_id")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  assignee User        @relation("TaskAssignee", fields: [assignedTo], references: [id])
+  team     Team        @relation(fields: [teamId], references: [id])
+  history  TaskHistory[]
+
+  @@map("tasks")
+}
+
+model TaskHistory {
+  id         Int        @id @default(autoincrement())
+  taskId     Int        @map("task_id")
+  changedBy  Int        @map("changed_by")
+  oldStatus  TaskStatus @map("old_status")
+  newStatus  TaskStatus @map("new_status")
+  changedAt  DateTime   @default(now()) @map("changed_at")
+
+  task           Task @relation(fields: [taskId], references: [id])
+  changedByUser  User @relation("TaskHistoryChangedBy", fields: [changedBy], references: [id])
+
+  @@map("tasks_history")
+}
