@@ -5,7 +5,7 @@ const config: Config = {
   testEnvironment: 'node',
   testMatch: ['**/tests/**/*.test.ts'],
   moduleFileExtensions: ['ts', 'js', 'json'],
-  setupFiles: ['dotenv/config'],
+  setupFiles: ['<rootDir>/tests/jest.env.ts'],
   setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
   clearMocks: true,
 };

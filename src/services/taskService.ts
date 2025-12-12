@@ -102,12 +102,13 @@ export const taskService = {
     const status = parseStatusInput(data.status) ?? TaskStatus.pending;
     const priority = parsePriorityInput(data.priority) ?? TaskPriority.medium;
 
+    // Verificar se o assignee existe e pertence ao time antes de verificar permissões
+    await ensureAssigneeBelongsToTeam(data.teamId, data.assignedTo);
+
     // members can only assign to themselves
     if (user.role === UserRole.member && data.assignedTo !== user.id) {
       throw new ApiError(403, 'FORBIDDEN', 'Members can only assign tasks to themselves.');
     }
-
-    await ensureAssigneeBelongsToTeam(data.teamId, data.assignedTo);
 
     return taskRepository.create({
       title: data.title,

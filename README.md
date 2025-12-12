@@ -50,10 +50,39 @@ docker-compose up --build
 - Postgres: postgres://postgres:postgres@localhost:5432/tasks_manager
 Compose adds DB healthcheck; API waits via `depends_on`.
 
-## Render
-- Build: `npm ci && npx prisma generate && npm run build`
-- Start: `npx prisma migrate deploy && node dist/server.js`
-- Vars: `DATABASE_URL`, `JWT_SECRET`, `BCRYPT_SALT_ROUNDS`, `PORT` (Render sets `PORT`)
+## Render Deployment
+
+### Opção 1: Blueprint (Recomendado)
+O projeto inclui um arquivo `render.yaml` que configura automaticamente a API e o banco de dados PostgreSQL.
+
+1. Faça push do código para o GitHub/GitLab
+2. No Render Dashboard, clique em **New** → **Blueprint**
+3. Conecte seu repositório
+4. O Render criará automaticamente:
+   - Web Service: `tasks-manager-api`
+   - PostgreSQL Database: `tasks-manager-db`
+5. As variáveis de ambiente são configuradas automaticamente
+
+### Opção 2: Deploy Manual
+1. Crie um PostgreSQL no Render
+2. Crie um Web Service com:
+   - **Build Command:** `npm ci && npm run build`
+   - **Start Command:** `npm run start:prod`
+   - **Health Check Path:** `/health`
+3. Configure as variáveis de ambiente:
+   - `DATABASE_URL` — connection string do PostgreSQL
+   - `JWT_SECRET` — gere um valor seguro
+   - `NODE_ENV` — `production`
+   - `CORS_ORIGIN` — `*` ou domínio específico
+
+### Variáveis de Ambiente (Render)
+| Variável | Descrição |
+|----------|-----------|
+| `DATABASE_URL` | Connection string PostgreSQL (automático via Blueprint) |
+| `JWT_SECRET` | Chave secreta para JWT (gerado automaticamente) |
+| `NODE_ENV` | `production` |
+| `CORS_ORIGIN` | Origem permitida para CORS |
+| `PORT` | Definido automaticamente pelo Render |
 
 ## Scripts
 - `npm run dev` — dev server
