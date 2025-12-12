@@ -1,87 +1,141 @@
 # Tasks Manager API
 
-Task Management REST API built with Node.js, Express, TypeScript, Prisma (PostgreSQL), Zod validation, JWT auth, bcrypt password hashing, Jest + Supertest tests, and Docker/Docker Compose. Ready for deployment on Render.
+Task Management REST API with Node.js, Express, TypeScript, Prisma (PostgreSQL), JWT auth, Zod validation, bcrypt, Jest + Supertest, and Docker. Ready for Render deployment.
 
 ## Stack
 - Node.js 20+, Express, TypeScript
-- Prisma ORM (PostgreSQL)
-- JWT auth, bcrypt
-- Zod request validation
-- Jest + Supertest for tests
-- Dockerfile + docker-compose (API + Postgres)
+- Prisma (PostgreSQL) + migrations/seed
+- JWT (1d exp), bcrypt
+- Zod validation
+- Jest + Supertest
+- Dockerfile (multi-stage) + docker-compose (API + Postgres)
+- ESLint + Prettier
 
-## Getting Started
-1. Install dependencies:
-   ```bash
-   npm install
-   ```
-2. Create your env file from the template:
-   ```bash
-   cp .env.example .env
-   ```
-   Set `DATABASE_URL`, `JWT_SECRET`, and `BCRYPT_SALT_ROUNDS`.
-3. Generate Prisma client and run the first migration:
-   ```bash
-   npx prisma generate
-   npx prisma migrate dev --name init
-   ```
-4. Seed an initial admin (email/password are configurable in `.env`):
-   ```bash
-   npm run seed
-   ```
-5. Start the API:
-   ```bash
-   npm run dev        # development (ts-node-dev)
-   npm run build && npm start  # production build + run
-   ```
-
-Health check: `GET /health` returns `{ "status": "ok" }`.
-
-## Tests
-Tests use your configured `DATABASE_URL` (ensure the DB exists and migrations are applied):
-```bash
-npx prisma migrate deploy   # or migrate dev for a local DB
-npm test
+## Env Vars
+Copy and edit `.env.example`:
+```
+PORT=3000
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/tasks_manager?schema=public
+DATABASE_URL_TEST=postgresql://postgres:postgres@localhost:5432/tasks_manager_test?schema=public
+JWT_SECRET=change-me
+BCRYPT_SALT_ROUNDS=10
+SEED_ADMIN_EMAIL=admin@example.com
+SEED_ADMIN_PASSWORD=admin123
+SEED_ADMIN_NAME=Admin
 ```
 
+## Local Development
+```bash
+npm install
+npx prisma generate
+npx prisma migrate dev --name init
+npm run seed   # optional admin seeder
+npm run dev    # ts-node-dev
+```
+Health check: `GET /health` → `{ "status": "ok" }`
+
+## Tests
+Use a clean DB (set `DATABASE_URL_TEST`). Migrations must be applied beforehand.
+```bash
+npx prisma migrate deploy
+npm test
+```
+Tests truncate tables between cases via `tests/setup.ts`.
+
 ## Docker
-Build and run API + Postgres:
 ```bash
 docker-compose up --build
 ```
 - API: http://localhost:3000
-- DB: postgres://postgres:postgres@localhost:5432/tasks_manager
+- Postgres: postgres://postgres:postgres@localhost:5432/tasks_manager
+Compose adds DB healthcheck; API waits via `depends_on`.
 
-## Render Deployment Notes
-- Set env vars: `DATABASE_URL`, `JWT_SECRET`, `BCRYPT_SALT_ROUNDS`, `PORT` (Render sets `PORT` automatically).
-- Build command: `npm install && npx prisma generate && npm run build`
-- Start command: `npx prisma migrate deploy && npm run start`
-- If using Render PostgreSQL, plug its connection string into `DATABASE_URL`.
+## Render
+- Build: `npm ci && npx prisma generate && npm run build`
+- Start: `npx prisma migrate deploy && node dist/server.js`
+- Vars: `DATABASE_URL`, `JWT_SECRET`, `BCRYPT_SALT_ROUNDS`, `PORT` (Render sets `PORT`)
 
-## Available Scripts
-- `npm run dev` – start with ts-node-dev
-- `npm run build` – compile TypeScript
-- `npm start` – run compiled server
-- `npm test` / `npm run test:watch` – run Jest + Supertest
-- `npm run prisma:generate` – generate Prisma client
-- `npm run prisma:migrate` – create a new migration (dev)
-- `npm run prisma:deploy` – apply migrations in production
-- `npm run seed` – seed default admin user
+## Scripts
+- `npm run dev` — dev server
+- `npm run build` — compile TS
+- `npm start` — run compiled
+- `npm test` / `npm run test:watch`
+- `npm run prisma:generate`
+- `npm run prisma:migrate`
+- `npm run prisma:deploy`
+- `npm run seed`
+- `npm run lint`
 
-## API Overview (key endpoints)
-- `POST /auth/register` – register member
-- `POST /auth/login` – login, returns JWT
-- `GET /auth/me` – current user profile (auth)
-- `GET /users` – list users (admin)
-- `POST /teams` – create team (admin)
-- `GET /teams` – list teams (admin = all, member = own)
-- `GET /teams/:teamId` – team details (member/admin)
-- `POST /teams/:teamId/members` – add member (admin)
-- `POST /tasks` – create task (team members/admin)
-- `GET /tasks` – list tasks (admin = all, member = team tasks)
-- `GET /tasks/:id` – task details
-- `PUT /tasks/:id` – edit task (admin or assignee)
-- `PATCH /tasks/:id/status` – update status (admin or assignee)
-- `DELETE /tasks/:id` – delete task (admin)
+## API Notes
+- Base path: `/api`
+- Success: `{ data, meta? }`
+- Errors: `{ error: { code, message, details? } }`
+- Status labels (API): `Pendente | Em progresso | Concluído` → DB: `pending | in_progress | completed`
+- Priority labels (API): `Alta | Média | Baixa` → DB: `high | medium | low`
 
-Roles: `admin` manages users/teams/tasks; `member` can see team tasks and edit only tasks assigned to them.
+### Auth
+- `POST /api/auth/register` — body `{ name, email, password }` (role defaults to `member`)
+- `POST /api/auth/login` — body `{ email, password }`
+- `GET /api/auth/me` — JWT required
+
+### Users (admin)
+- `GET /api/users`
+- `GET /api/users/:id`
+- `PATCH /api/users/:id` (name, role)
+- `DELETE /api/users/:id`
+
+### Teams
+- `POST /api/teams` (admin)
+- `GET /api/teams` (admin: all, member: only own)
+- `GET /api/teams/:id` (admin or member of team)
+- `PATCH /api/teams/:id` (admin)
+- `DELETE /api/teams/:id` (admin)
+- `POST /api/teams/:id/members` (admin) body `{ userId }`
+- `DELETE /api/teams/:id/members/:userId` (admin)
+
+### Tasks
+- `POST /api/tasks` — body `{ title, description?, status?, priority?, teamId, assignedTo }`
+  - member: must belong to team and `assignedTo` must be self; defaults: status `pending`, priority `medium`
+- `GET /api/tasks` — filters: `teamId, assignedTo, status, priority, search, page, pageSize`
+  - admin: all; member: only teams they belong to
+- `GET /api/tasks/:id` — admin or team member
+- `PUT /api/tasks/:id` — admin: all fields; member: only if assignee, cannot change `assignedTo`/`teamId`
+- `PATCH /api/tasks/:id/status` — admin or assignee; records history on change
+- `DELETE /api/tasks/:id` — admin or assignee member
+- `GET /api/tasks/:id/history` — admin or team member
+
+### Curl Samples
+```bash
+# register
+curl -X POST http://localhost:3000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"name":"User","email":"user@example.com","password":"Password123!"}'
+
+# login
+TOKEN=$(curl -s -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@example.com","password":"Password123!"}' | jq -r '.data.token')
+
+# create team (admin)
+curl -X POST http://localhost:3000/api/teams \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Team A","description":"Example"}'
+
+# create task
+curl -X POST http://localhost:3000/api/tasks \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Task 1","teamId":1,"assignedTo":1,"priority":"Média"}'
+```
+
+## Database
+- Prisma schema in `prisma/schema.prisma` with enums (`UserRole`, `TaskStatus`, `TaskPriority`) and relations.
+- Unique constraint on team membership (user_id, team_id).
+- Status changes recorded in `tasks_history`.
+
+## Testing Coverage (integration)
+- Auth: register/login/me
+- Admin vs member permissions (teams, tasks)
+- Membership rules for task creation/listing
+- Task status changes + history recording

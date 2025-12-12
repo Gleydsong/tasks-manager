@@ -201,9 +201,14 @@ export const taskService = {
       }
     }
 
-    if (typeof data.assignedTo === 'number' && data.assignedTo !== task.assignedTo) {
-      await ensureAssigneeBelongsToTeam(task.teamId, data.assignedTo);
+    const targetTeamId = data.teamId ?? task.teamId;
+    const targetAssigneeId = data.assignedTo ?? task.assignedTo;
+
+    if (targetTeamId !== task.teamId) {
+      await ensureTeamExists(targetTeamId);
     }
+
+    await ensureAssigneeBelongsToTeam(targetTeamId, targetAssigneeId);
 
     const status = parseStatusInput(data.status);
     const update = buildTaskUpdate(data, user.role === UserRole.admin);

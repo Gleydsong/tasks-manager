@@ -8,9 +8,11 @@ services:
     env_file: .env
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/tasks_manager?schema=public
+      DATABASE_URL_TEST: postgresql://postgres:postgres@db:5432/tasks_manager_test?schema=public
     depends_on:
-      - db
-    command: sh -c "npx prisma migrate deploy && npm run start"
+      db:
+        condition: service_healthy
+    command: sh -c "npx prisma migrate deploy && node dist/server.js"
   db:
     image: postgres:16
     restart: unless-stopped
@@ -22,6 +24,11 @@ services:
       - '5432:5432'
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   pgdata:

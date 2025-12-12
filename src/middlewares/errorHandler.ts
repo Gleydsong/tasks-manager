@@ -24,6 +24,15 @@ export const errorHandler = (
     if (error.code === 'P2002') {
       return formatError(res, 409, 'CONFLICT', 'Resource already exists.', error.meta);
     }
+    if (error.code === 'P2003') {
+      return formatError(
+        res,
+        409,
+        'CONFLICT',
+        'Operation not allowed due to related records.',
+        error.meta,
+      );
+    }
   }
 
   console.error(error);

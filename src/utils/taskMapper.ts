@@ -55,10 +55,11 @@ export const parsePriorityInput = (value?: unknown): TaskPriority | undefined =>
   return priorityInputMap[key];
 };
 
-export const taskToApi = (task: Task) => ({
+export const taskToApi = (task: any) => ({
   ...task,
-  status: statusLabel[task.status],
-  priority: priorityLabel[task.priority],
+  status: statusLabel[task.status as TaskStatus],
+  priority: priorityLabel[task.priority as TaskPriority],
+  ...(task.history ? { history: task.history.map((h: TaskHistory) => historyToApi(h)) } : {}),
 });
 
 export const historyToApi = (history: TaskHistory) => ({
