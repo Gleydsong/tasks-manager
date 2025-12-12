@@ -23,4 +23,15 @@ export const userRepository = {
       },
       orderBy: { id: 'asc' },
     }),
+
+  update: (id: number, data: Prisma.UserUpdateInput) =>
+    prisma.user.update({
+      where: { id },
+      data,
+    }),
+
+  delete: (id: number) =>
+    prisma.user.delete({
+      where: { id },
+    }),
 };

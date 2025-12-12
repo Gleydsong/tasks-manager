@@ -11,7 +11,7 @@ const validate =
     const result = schema.safeParse(data);
 
     if (!result.success) {
-      return next(new ApiError(400, 'Validation failed.', result.error.flatten()));
+      return next(new ApiError(422, 'VALIDATION_ERROR', 'Validation failed.', result.error.flatten()));
     }
 
     (req as Record<RequestPart, unknown>)[part] = result.data as unknown;

@@ -1,6 +1,10 @@
 import { NextFunction, Request, Response } from 'express';
+import { Prisma } from '@prisma/client';
 import { ZodError } from 'zod';
 import { ApiError, isApiError } from '../utils/errors';
+
+const formatError = (res: Response, status: number, code: string, message: string, details?: unknown) =>
+  res.status(status).json({ error: { code, message, ...(details ? { details } : {}) } });
 
 export const errorHandler = (
   error: unknown,
@@ -9,19 +13,19 @@ export const errorHandler = (
   _next: NextFunction,
 ) => {
   if (error instanceof ZodError) {
-    return res.status(400).json({
-      message: 'Validation failed.',
-      errors: error.flatten(),
-    });
+    return formatError(res, 422, 'VALIDATION_ERROR', 'Validation failed.', error.flatten());
   }
 
   if (isApiError(error)) {
-    return res.status(error.statusCode).json({
-      message: error.message,
-      details: error.details,
-    });
+    return formatError(res, error.statusCode, error.code, error.message, error.details);
+  }
+
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    if (error.code === 'P2002') {
+      return formatError(res, 409, 'CONFLICT', 'Resource already exists.', error.meta);
+    }
   }
 
   console.error(error);
-  return res.status(500).json({ message: 'Internal server error.' });
+  return formatError(res, 500, 'INTERNAL_SERVER_ERROR', 'Internal server error.');
 };

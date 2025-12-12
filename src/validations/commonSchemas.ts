@@ -7,3 +7,7 @@ export const idParamSchema = z.object({
 export const teamIdParamSchema = z.object({
   teamId: z.coerce.number().int().positive(),
 });
+
+export const userIdParamSchema = z.object({
+  userId: z.coerce.number().int().positive(),
+});

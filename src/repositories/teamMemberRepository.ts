@@ -26,4 +26,9 @@ export const teamMemberRepository = {
 
     return memberships.map((membership) => membership.teamId);
   },
+
+  removeMember: (teamId: number, userId: number) =>
+    prisma.teamMember.deleteMany({
+      where: { teamId, userId },
+    }),
 };

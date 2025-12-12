@@ -7,7 +7,7 @@ import { ApiError } from '../utils/errors';
 const ensureTeamExists = async (teamId: number): Promise<Team> => {
   const team = await teamRepository.findById(teamId);
   if (!team) {
-    throw new ApiError(404, 'Team not found.');
+    throw new ApiError(404, 'NOT_FOUND', 'Team not found.');
   }
 
   return team;
@@ -31,12 +31,12 @@ export const teamService = {
     const user = await userRepository.findById(userId);
 
     if (!user) {
-      throw new ApiError(404, 'User not found.');
+      throw new ApiError(404, 'NOT_FOUND', 'User not found.');
     }
 
     const alreadyMember = await teamMemberRepository.isMember(teamId, userId);
     if (alreadyMember) {
-      throw new ApiError(409, 'User is already a member of this team.');
+      throw new ApiError(409, 'CONFLICT', 'User is already a member of this team.');
     }
 
     return teamMemberRepository.addMember(teamId, userId);
@@ -48,10 +48,30 @@ export const teamService = {
     if (role !== UserRole.admin) {
       const isMember = await teamMemberRepository.isMember(teamId, requesterId);
       if (!isMember) {
-        throw new ApiError(403, 'You are not allowed to view this team.');
+        throw new ApiError(403, 'FORBIDDEN', 'You are not allowed to view this team.');
       }
     }
 
-    return teamRepository.findById(teamId);
+    return team;
+  },
+
+  updateTeam: async (teamId: number, data: { name?: string; description?: string | null }) => {
+    await ensureTeamExists(teamId);
+    return teamRepository.update(teamId, data);
+  },
+
+  deleteTeam: async (teamId: number) => {
+    await ensureTeamExists(teamId);
+    return teamRepository.delete(teamId);
+  },
+
+  removeMember: async (teamId: number, userId: number) => {
+    await ensureTeamExists(teamId);
+    const membership = await teamMemberRepository.isMember(teamId, userId);
+    if (!membership) {
+      throw new ApiError(404, 'NOT_FOUND', 'Member not found in this team.');
+    }
+    await teamMemberRepository.removeMember(teamId, userId);
+    return membership;
   },
 };

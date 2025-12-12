@@ -20,8 +20,10 @@ const config = {
   port: numberOrFallback(process.env.PORT, 3000),
   jwtSecret,
   databaseUrl: process.env.DATABASE_URL,
+  databaseUrlTest: process.env.DATABASE_URL_TEST,
   bcryptSaltRounds: numberOrFallback(process.env.BCRYPT_SALT_ROUNDS, 10),
   nodeEnv: process.env.NODE_ENV ?? 'development',
+  corsOrigin: process.env.CORS_ORIGIN ?? '*',
 };
 
 export default config;

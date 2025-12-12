@@ -36,4 +36,15 @@ export const teamRepository = {
         members: { include: { user: true } },
       },
     }),
+
+  update: (id: number, data: Prisma.TeamUpdateInput) =>
+    prisma.team.update({
+      where: { id },
+      data,
+    }),
+
+  delete: (id: number) =>
+    prisma.team.delete({
+      where: { id },
+    }),
 };

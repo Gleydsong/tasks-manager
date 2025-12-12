@@ -1,4 +1,4 @@
-import { User } from '@prisma/client';
+import { User, UserRole } from '@prisma/client';
 import { userRepository } from '../repositories/userRepository';
 import { ApiError } from '../utils/errors';
 import { hashPassword, comparePassword } from '../utils/password';
@@ -13,7 +13,7 @@ export const authService = {
   register: async (name: string, email: string, password: string) => {
     const existing = await userRepository.findByEmail(email);
     if (existing) {
-      throw new ApiError(409, 'User already exists with this email.');
+      throw new ApiError(409, 'USER_EXISTS', 'User already exists with this email.');
     }
 
     const hashedPassword = await hashPassword(password);
@@ -21,7 +21,7 @@ export const authService = {
       name,
       email,
       password: hashedPassword,
-      role: 'member',
+      role: UserRole.member,
     });
 
     const token = generateToken({ userId: user.id, role: user.role });
@@ -32,12 +32,12 @@ export const authService = {
   login: async (email: string, password: string) => {
     const user = await userRepository.findByEmail(email);
     if (!user) {
-      throw new ApiError(401, 'Invalid credentials.');
+      throw new ApiError(401, 'INVALID_CREDENTIALS', 'Invalid credentials.');
     }
 
     const isValid = await comparePassword(password, user.password);
     if (!isValid) {
-      throw new ApiError(401, 'Invalid credentials.');
+      throw new ApiError(401, 'INVALID_CREDENTIALS', 'Invalid credentials.');
     }
 
     const token = generateToken({ userId: user.id, role: user.role });

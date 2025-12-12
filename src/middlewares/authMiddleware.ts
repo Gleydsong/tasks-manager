@@ -18,7 +18,7 @@ export const authenticate = async (
 ) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return next(new ApiError(401, 'Authentication token is missing.'));
+    return next(new ApiError(401, 'AUTH_REQUIRED', 'Authentication token is missing.'));
   }
 
   const token = authHeader.split(' ')[1];
@@ -28,12 +28,12 @@ export const authenticate = async (
     const user = await prisma.user.findUnique({ where: { id: payload.userId } });
 
     if (!user) {
-      return next(new ApiError(401, 'User no longer exists.'));
+      return next(new ApiError(401, 'INVALID_TOKEN', 'User no longer exists.'));
     }
 
     req.user = { id: user.id, role: user.role };
     return next();
   } catch (error) {
-    return next(new ApiError(401, 'Invalid or expired token.'));
+    return next(new ApiError(401, 'INVALID_TOKEN', 'Invalid or expired token.'));
   }
 };
