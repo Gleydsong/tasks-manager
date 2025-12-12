@@ -1,0 +1,26 @@
+{
+  "name": "tasks-manager",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "ts-node server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "test:watch": "jest --watch",
+    "test": "jest"
+  },
+  "author": "GuiDev",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "express": "^4.22.1",
+    "jest": "^30.2.0",
+    "jsonwebtoken": "^9.0.3",
+    "prisma": "^7.1.0",
+    "zod": "^4.1.13"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.10"
+  }
+}
