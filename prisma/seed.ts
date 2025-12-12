@@ -19,7 +19,7 @@ async function main() {
       name,
       email,
       password: hashedPassword,
-      role: UserRole.admin,
+      role: UserRole.admin,1
     },
   });
 
